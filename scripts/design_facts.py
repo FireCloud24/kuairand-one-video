@@ -1,0 +1,156 @@
+"""Facts the pre-registration needs, computed without looking at any outcome.
+
+Everything here uses only (a) which random videos were shown, and (b) the ordinary
+feed from 8 to 21 April 2022, before the random experiment started. Nothing after a
+random exposure is read. Writes results/design_facts.md and results/design_facts.json.
+
+    python scripts/design_facts.py
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src import data, topics  # noqa: E402
+
+MIN_EXPOSURES = 1000          # a topic is a target if it has at least this many random exposures
+WINDOWS = (10, 30, 100)
+PRE_PERIOD_END = 20220421     # last day before the random experiment
+NEW_USER_MAX_DAYS = 365
+
+
+def minimum_detectable(sd: float, n_treated: int, n_control: int) -> float:
+    """Smallest true difference a two-group comparison would detect 80% of the time at
+    the 5% level, treating exposures as independent. A rough guide only: it ignores
+    that exposures cluster within users."""
+    return float(2.8 * sd * np.sqrt(1 / n_treated + 1 / n_control))
+
+
+def main(argv=None) -> int:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--raw-dir", default="data/raw")
+    p.add_argument("--processed-dir", default="data/processed")
+    p.add_argument("--out-dir", default="results")
+    args = p.parse_args(argv)
+
+    video_topics = topics.load_video_topics(args.raw_dir, args.processed_dir)
+    random = data.load_random(args.raw_dir, ["user_id", "video_id", "time_ms", "tab"])
+    random["topic"] = topics.attach_topic(random, video_topics)
+    counts = topics.topic_counts(random["topic"], random["user_id"], random["video_id"])
+    targets = topics.choose_targets(counts, MIN_EXPOSURES)
+
+    # Ordinary feed BEFORE the experiment only.
+    pre = data.load_standard(args.raw_dir, ["user_id", "video_id", "date", "time_ms", "tab"])
+    pre = pre[pre["date"] <= PRE_PERIOD_END].copy()
+    pre["topic"] = topics.attach_topic(pre, video_topics)
+    pre = pre.sort_values(["user_id", "time_ms"], kind="stable")
+    user = pre["user_id"].to_numpy()
+
+    n_random = len(random)
+    rows = []
+    for t in targets:
+        is_t = (pre["topic"].to_numpy() == t)
+        n_t = int(counts.loc[t, "random_exposures"])
+        row = {"topic": t, "name": topics.ENGLISH.get(t, str(t)), "random_exposures": n_t,
+               "users_exposed": int(counts.loc[t, "users"]), "pool_videos": int(counts.loc[t, "pool_videos"]),
+               "pre_period_feed_share": float(is_t.mean())}
+        for k in WINDOWS:
+            sd = topics.block_share_sd(is_t, user, k)
+            row[f"sd_{k}"] = sd
+            row[f"mde_{k}"] = minimum_detectable(sd, n_t, n_random - n_t)
+        rows.append(row)
+
+    # Pooled guide: exposure-weighted average of per-topic effects, topics treated as independent.
+    w = np.array([r["random_exposures"] for r in rows], dtype=float)
+    w /= w.sum()
+    pooled = {str(k): float(np.sqrt(np.sum((w * np.array([r[f"mde_{k}"] for r in rows])) ** 2))) for k in WINDOWS}
+
+    per_request = pre.groupby(["user_id", "time_ms"]).size()
+    users = pd.read_csv(Path(args.raw_dir) / data.USER_FEATURES, usecols=["user_id", "register_days"])
+    pre_counts = data.per_user_counts(pre).reindex(users["user_id"]).fillna(0)
+    facts = {
+        "min_exposures": MIN_EXPOSURES,
+        "targets": targets,
+        "random_exposures_total": n_random,
+        "random_exposures_in_targets": int(sum(r["random_exposures"] for r in rows)),
+        "random_exposures_no_topic": int(counts["random_exposures"].get(topics.NO_TOPIC, 0)),
+        "random_tab_shares": {str(k): float(v) for k, v in random["tab"].value_counts(normalize=True).items()},
+        "pre_period_tab_shares": {str(k): float(v) for k, v in
+                                  pre["tab"].value_counts(normalize=True).head(5).items()},
+        "pre_period_rows": int(len(pre)),
+        "pre_period_no_topic_share": float((pre["topic"] == topics.NO_TOPIC).mean()),
+        "median_rows_per_request": float(per_request.median()),
+        "share_rows_sharing_a_timestamp": float(per_request[per_request >= 2].sum() / per_request.sum()),
+        "users": int(len(users)),
+        "new_users": int((users["register_days"] <= NEW_USER_MAX_DAYS).sum()),
+        "users_no_pre_period_rows": int((pre_counts == 0).sum()),
+        "pre_period_rows_tercile_cuts": [float(x) for x in pre_counts.quantile([1 / 3, 2 / 3])],
+        "pooled_mde": pooled,
+    }
+
+    out = Path(args.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "design_facts.json").write_text(json.dumps({"topics": rows, "facts": facts}, indent=2), encoding="utf-8")
+
+    lines = [
+        "# Design facts used by the pre-registration",
+        "",
+        "Generated by `scripts/design_facts.py`. It reads which random videos were shown and",
+        "the ordinary feed from 8 to 21 April 2022, before the experiment. It reads nothing",
+        "that happened after a random exposure.",
+        "",
+        f"## Target topics (at least {MIN_EXPOSURES:,} random exposures)",
+        "",
+        "Feed share is the topic's share of ordinary impressions before the experiment. SD is",
+        "the standard deviation of that share across blocks of 10, 30 or 100 consecutive",
+        "impressions. \"Detectable\" is the smallest difference in share, in percentage points,",
+        "that a simple treated-against-control comparison would find 80% of the time. It",
+        "ignores clustering within users, so read it as a rough guide.",
+        "",
+        "| Topic | ID | Random exposures | Users exposed | Pool videos | Feed share | SD 10 | SD 30 | SD 100 | Detectable 10 | Detectable 30 | Detectable 100 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for r in rows:
+        lines.append(
+            f"| {r['name']} | {r['topic']} | {r['random_exposures']:,} | {r['users_exposed']} | {r['pool_videos']} | "
+            f"{100 * r['pre_period_feed_share']:.1f}% | {r['sd_10']:.3f} | {r['sd_30']:.3f} | {r['sd_100']:.3f} | "
+            f"{100 * r['mde_10']:.2f} | {100 * r['mde_30']:.2f} | {100 * r['mde_100']:.2f} |")
+    f = facts
+    lines += [
+        "",
+        f"Pooled over the {len(rows)} topics (weighted by exposures, topics treated as independent), the rough",
+        f"detectable difference is {100 * pooled['10']:.2f}, {100 * pooled['30']:.2f} and {100 * pooled['100']:.2f} "
+        "percentage points for the 10, 30 and 100 windows.",
+        "",
+        "## Other facts",
+        "",
+        "| Fact | Value |",
+        "|---|---:|",
+        f"| Random exposures in total | {f['random_exposures_total']:,} |",
+        f"| Random exposures in a target topic | {f['random_exposures_in_targets']:,} |",
+        f"| Random exposures whose video has no topic | {f['random_exposures_no_topic']:,} |",
+        f"| Share of random exposures in tab 1 | {100 * f['random_tab_shares'].get('1', 0):.1f}% |",
+        f"| Share of pre-experiment ordinary impressions in tab 1 | {100 * f['pre_period_tab_shares'].get('1', 0):.1f}% |",
+        f"| Pre-experiment ordinary impressions | {f['pre_period_rows']:,} |",
+        f"| Share of those with no topic | {100 * f['pre_period_no_topic_share']:.1f}% |",
+        f"| Median impressions sharing one timestamp (one feed request) | {f['median_rows_per_request']:.0f} |",
+        f"| Share of impressions that share a timestamp with another | {100 * f['share_rows_sharing_a_timestamp']:.1f}% |",
+        f"| Users registered for {NEW_USER_MAX_DAYS} days or fewer | {f['new_users']} of {f['users']} |",
+        f"| Users with no ordinary impressions before the experiment | {f['users_no_pre_period_rows']} |",
+        f"| Tercile cut-offs of pre-experiment impressions per user | {f['pre_period_rows_tercile_cuts'][0]:,.0f} and {f['pre_period_rows_tercile_cuts'][1]:,.0f} |",
+        "",
+    ]
+    (out / "design_facts.md").write_text("\n".join(lines), encoding="utf-8")
+    print("\n".join(lines))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

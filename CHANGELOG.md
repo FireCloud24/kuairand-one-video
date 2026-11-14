@@ -23,5 +23,15 @@ Set up the repo and the data.
 - One difference from the paper worth knowing: random videos are 0.64% of impressions
   in the random period for these 1,000 users. The dataset page says about 0.37% for
   the full dataset. The page does not say how its figure was computed, so I only note it.
+- Timestamps are per feed request. About six impressions share each timestamp, and a
+  random video shares its timestamp with about five ordinary ones. So "the next 10
+  impressions" has to start at the next request. The pre-registration defines this.
+- The supplementary category file gives one named top-level category per video. It
+  agrees with the main dataset's `tag` column for about 74% of videos, so the two are
+  different labellings. I pre-registered the category file as the topic and the `tag`
+  column as a check.
+- `scripts/design_facts.py` writes the counts the pre-registration relies on. It reads
+  the random log and the ordinary feed before 22 April only.
+- Wrote `PREREGISTRATION.md` before writing any code that builds outcomes.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.
