@@ -33,5 +33,15 @@ Set up the repo and the data.
 - `scripts/design_facts.py` writes the counts the pre-registration relies on. It reads
   the random log and the ordinary feed before 22 April only.
 - Wrote `PREREGISTRATION.md` before writing any code that builds outcomes.
+- Built the treated and control sets and the balance table (`results/balance.md`).
+  Day, hour, activity and account age are balanced to within 0.003 SD. The baseline
+  share of the topic is 0.020 SD lower for treated exposures (5.30% against 5.45%),
+  and the interval does not include zero. That is inside the pre-registered limit of
+  0.05 SD, so I continue. But it is a real, small tilt: people who already see a lot
+  of a topic were slightly less likely to draw a random video in it. My guess is that
+  the app does not re-show a video the user has already seen, and fans of a topic have
+  seen more of its pool videos. I cannot check that guess from the logs. It matters
+  for reading the results: the plain difference in outcomes starts about 0.15 points
+  below zero, which is why the pre-registered estimator subtracts the baseline.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.
