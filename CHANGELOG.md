@@ -54,5 +54,14 @@ Set up the repo and the data.
   `DEVIATIONS.md` as an addition.
 - The pre-registered figure uses plain shares, so its "before" bins show the tilt and
   sit at about -0.15 instead of zero. I added a dashed line at that level.
+- Ran the pre-registered splits (`results/heterogeneity.md`). New, long-registered,
+  heavy and light users all look like the whole sample. Popular topics carry most of
+  the next-10 dip. The one split that differs is watched against skipped: +0.33 points
+  in the next 30 impressions after a watched random video, -0.12 after a skipped one.
+  Only 17.4% of random videos were watched, so the average sits near zero.
+- Added before-and-after bins for watched and skipped (see `DEVIATIONS.md`). Users who
+  watched the random video were already 1.27 points above controls before it, so most
+  of the watched-skipped gap is taste that was there already. The part that changes at
+  the exposure is about +0.3 points for watched and -0.1 for skipped, and it fades.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.

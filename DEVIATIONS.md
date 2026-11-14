@@ -25,6 +25,17 @@ as a placebo. Because of the tilt above, those bins sit below zero. I added a da
 line at their average so the reader compares the bins after the exposure with the
 right level. The points and intervals are as pre-registered.
 
+## 2026-11-14: before-and-after bins for watched and skipped (added)
+
+The pre-registered watched-against-skipped split gave opposite signs: the topic's share
+rose after a watched random video and fell after a skipped one. Before describing
+that, I wanted to see how different the two groups already were. So I added the
+event-study bins split by watching status (`results/heterogeneity.md`, second section,
+and `results/watched_skipped.png`). I added it after seeing the split, so it is
+exploratory twice over. It supports the warning in the pre-registration: before the
+exposure, users who went on to watch the random video were already seeing 1.27 points
+more of its topic than controls, and that gap was growing.
+
 ## 2026-11-14: wording of the decision (clarified)
 
 The pre-registered rule returns one of three answers, and it also says an interval
