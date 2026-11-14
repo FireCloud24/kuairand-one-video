@@ -34,7 +34,7 @@ def covariates(study: events.Study) -> dict[str, np.ndarray]:
         "Ordinary impressions before the exposure": (ev["lo"] - ev["s"]).to_numpy(dtype=float),
         "Days since registration": reg,
     }
-    out = {"Baseline share of the topic (last 100 impressions)": events.share_matrix(study.feed, study.targets, a, b)}
+    out = {"Baseline share of the topic (last 100 impressions)": study.shares(a, b)}
     out.update({k: np.broadcast_to(v, (n_topics, len(v))) for k, v in same.items()})
     return out
 
@@ -47,7 +47,7 @@ def standardised(y: np.ndarray) -> np.ndarray:
 
 def balance_rows(study: events.Study, weights: np.ndarray) -> tuple[list[dict], list[dict]]:
     codes, n_users = estimate.user_codes(study.events["user_id"].to_numpy())
-    treated = events.treated_matrix(study.events["topic"].to_numpy(), study.targets)
+    treated = study.prepare().treated
     pooled, per_topic = [], []
     for name, y in covariates(study).items():
         raw = estimate.diff_in_means(y, treated, codes, n_users)

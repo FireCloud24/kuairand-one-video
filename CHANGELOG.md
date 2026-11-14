@@ -43,5 +43,16 @@ Set up the repo and the data.
   seen more of its pool videos. I cannot check that guess from the logs. It matters
   for reading the results: the plain difference in outcomes starts about 0.15 points
   below zero, which is why the pre-registered estimator subtracts the baseline.
+- Ran the event study (`results/event_study.md`). The pooled effect is -0.17 points in
+  the next 10 impressions, -0.04 in the next 30 and +0.03 in the next 100. All three
+  decision intervals are inside the half-point margin, so the pre-registered rule says
+  noise. The next-10 interval is entirely below zero, which I report as its own small
+  finding. Dropout is the same in both groups.
+- Checked my guess about the tilt in the balance table. It holds as far as the logs
+  can show: the same random video went to the same user twice only 2 times where a
+  history-blind draw would give about 353 (`results/draw_check.md`). Recorded in
+  `DEVIATIONS.md` as an addition.
+- The pre-registered figure uses plain shares, so its "before" bins show the tilt and
+  sit at about -0.15 instead of zero. I added a dashed line at that level.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.

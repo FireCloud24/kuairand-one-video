@@ -1,0 +1,8 @@
+{
+  "pool": 7388,
+  "exposures": 43028,
+  "repeats_observed": 2,
+  "repeats_expected_with_replacement": 352.9685977260423,
+  "already_in_feed_observed": 28,
+  "already_in_feed_expected_if_ignored": 318.55238224147257
+}

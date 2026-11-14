@@ -31,6 +31,7 @@ class Feed:
     time: np.ndarray
     topic: np.ndarray
     tab: np.ndarray
+    order: np.ndarray | None = None   # positions of these rows in the frame they came from
 
     def __len__(self) -> int:
         return len(self.user)
@@ -39,8 +40,9 @@ class Feed:
 def build_feed(standard: pd.DataFrame) -> Feed:
     """standard needs user_id, time_ms, topic, tab. A stable sort keeps file order
     among rows that share a timestamp."""
-    s = standard.sort_values(["user_id", "time_ms"], kind="stable")
-    return Feed(s["user_id"].to_numpy(), s["time_ms"].to_numpy(), s["topic"].to_numpy(), s["tab"].to_numpy())
+    order = np.lexsort((np.arange(len(standard)), standard["time_ms"].to_numpy(), standard["user_id"].to_numpy()))
+    s = standard.iloc[order]
+    return Feed(s["user_id"].to_numpy(), s["time_ms"].to_numpy(), s["topic"].to_numpy(), s["tab"].to_numpy(), order)
 
 
 def locate(feed: Feed, ev_user: np.ndarray, ev_time: np.ndarray) -> pd.DataFrame:
@@ -122,14 +124,42 @@ class Study:
     events: pd.DataFrame     # one row per random exposure, with s, lo, hi, e
     targets: list[int]
     users: pd.DataFrame      # user features plus pre-period activity
+    cums: list | None = None           # one topic_cumsum per target; built on first use
+    treated: np.ndarray | None = None  # (topics, events); built on first use
+
+    def prepare(self) -> "Study":
+        if self.cums is None:
+            self.cums = [topic_cumsum(self.feed.topic, t) for t in self.targets]
+        if self.treated is None:
+            self.treated = treated_matrix(self.events["topic"].to_numpy(), self.targets)
+        return self
+
+    def shares(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        """(topics, events): share of each target topic in the window [a, b)."""
+        self.prepare()
+        return np.vstack([window_share(c, a, b) for c in self.cums])
 
 
 PRE_PERIOD_END = 20220421
 
 
-def load_study(raw_dir: Path | str, processed_dir: Path | str, tab: int | None = None) -> Study:
+def tag_membership(video_ids: np.ndarray, video_tags: pd.DataFrame, targets: list[int]) -> np.ndarray:
+    """(topics, rows) boolean: does the row's video list that id in its `tag` string?
+    video_tags has video_id and tag, where tag looks like "39" or "12,62" or is missing."""
+    tags = video_tags.dropna(subset=["tag"])
+    pairs = tags.assign(tag=tags["tag"].astype(str).str.split(",")).explode("tag")
+    pairs["tag"] = pd.to_numeric(pairs["tag"], errors="coerce")
+    out = np.zeros((len(targets), len(video_ids)), dtype=bool)
+    for i, t in enumerate(targets):
+        out[i] = np.isin(video_ids, pairs.loc[pairs["tag"] == t, "video_id"].to_numpy())
+    return out
+
+
+def load_study(raw_dir: Path | str, processed_dir: Path | str, tab: int | None = None,
+               use_tags: bool = False) -> Study:
     """Load everything and place every random exposure in the feed.
-    With `tab`, only ordinary impressions in that tab make up the feed."""
+    With `tab`, only ordinary impressions in that tab make up the feed.
+    With `use_tags`, topic membership comes from the main dataset's `tag` column."""
     video_topics = topics.load_video_topics(raw_dir, processed_dir)
     random = data.load_random(raw_dir, ["user_id", "video_id", "date", "hourmin", "time_ms",
                                         "is_click", "long_view", "tab"])
@@ -148,4 +178,11 @@ def load_study(raw_dir: Path | str, processed_dir: Path | str, tab: int | None =
     events = pd.concat([events, locate(feed, events["user_id"].to_numpy(), events["time_ms"].to_numpy())], axis=1)
     users = pd.read_csv(Path(raw_dir) / data.USER_FEATURES, usecols=["user_id", "register_days"])
     users["pre_period_impressions"] = users["user_id"].map(pre_counts).fillna(0).astype(int)
-    return Study(feed, events, targets, users)
+    study = Study(feed, events, targets, users)
+    if use_tags:
+        video_tags = pd.read_csv(Path(raw_dir) / data.VIDEO_FEATURES, usecols=["video_id", "tag"],
+                                 dtype={"tag": "string"})
+        member = tag_membership(standard["video_id"].to_numpy()[feed.order], video_tags, targets)
+        study.cums = [np.concatenate([[0], np.cumsum(row, dtype=np.int64)]) for row in member]
+        study.treated = tag_membership(events["video_id"].to_numpy(), video_tags, targets)
+    return study
