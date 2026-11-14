@@ -63,5 +63,10 @@ Set up the repo and the data.
   watched the random video were already 1.27 points above controls before it, so most
   of the watched-skipped gap is taste that was there already. The part that changes at
   the exposure is about +0.3 points for watched and -0.1 for skipped, and it fades.
+- Wrote the README. `scripts/check_readme.py` traces each number in it to a file under
+  `results/` and writes the list to `results/readme_numbers.md`. A test fails if a
+  number has no source.
+- No Colab notebook. Everything runs on a laptop CPU in a few minutes from the
+  commands in the README.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.
