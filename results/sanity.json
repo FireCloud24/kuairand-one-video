@@ -1,0 +1,65 @@
+{
+  "table": [
+    {
+      "policy": "standard",
+      "statistic": "users",
+      "paper": 1000,
+      "ours": 1000,
+      "difference": 0,
+      "match": true
+    },
+    {
+      "policy": "standard",
+      "statistic": "items",
+      "paper": 4369953,
+      "ours": 4369953,
+      "difference": 0,
+      "match": true
+    },
+    {
+      "policy": "standard",
+      "statistic": "interactions",
+      "paper": 11713045,
+      "ours": 11713045,
+      "difference": 0,
+      "match": true
+    },
+    {
+      "policy": "random",
+      "statistic": "users",
+      "paper": 1000,
+      "ours": 1000,
+      "difference": 0,
+      "match": true
+    },
+    {
+      "policy": "random",
+      "statistic": "items",
+      "paper": 7388,
+      "ours": 7388,
+      "difference": 0,
+      "match": true
+    },
+    {
+      "policy": "random",
+      "statistic": "interactions",
+      "paper": 43028,
+      "ours": 43028,
+      "difference": 0,
+      "match": true
+    }
+  ],
+  "checks": {
+    "random_log_is_rand_share": 1.0,
+    "standard_log_is_rand_share": 0.0,
+    "random_first_date": 20220422,
+    "random_last_date": 20220508,
+    "standard_first_date": 20220408,
+    "standard_last_date": 20220508,
+    "random_per_user_min": 10,
+    "random_per_user_median": 22.0,
+    "random_per_user_max": 650,
+    "standard_per_user_median": 8327.5,
+    "random_share_of_period": 0.006422004245018238
+  }
+}
