@@ -3,16 +3,16 @@
 I used a real experiment inside the Kuaishou app to test whether a single chance
 encounter with a topic changes what the recommender shows you next.
 
-## Why I cared
-
 <!-- MYO: write 2–4 sentences on why you cared -->
 
 ## What I found
 
 It does not. After one random video in a topic, that topic's share of the next 30
 recommendations changed by -0.04 percentage points, with a 95% interval from -0.10
-to +0.02. The only movement is a small dip in the first 10 recommendations, and it is
-gone by the next 30.
+to +0.02. The only movement is a small dip in the first 10 recommendations. In the main
+estimate it is gone by the next 30. In the three pre-registered checks it is still
+just visible at 30 (-0.07 to -0.11 points), always well inside the half-point rule
+I set in advance.
 
 ![Event study](results/event_study.png)
 
@@ -46,8 +46,8 @@ and 100 ordinary recommendations, minus its share of the 100 before. Intervals c
 from 2,000 bootstrap resamples of whole users, because one user contributes many
 random videos.
 
-I committed [`PREREGISTRATION.md`](PREREGISTRATION.md) before writing any code that
-computes an outcome. The git history shows the order.
+I committed [`PREREGISTRATION.md`](PREREGISTRATION.md) before any code that computes
+an outcome, and the git history shows that order.
 
 | Window after the random video | Change in the topic's share, treated minus control | 95% interval |
 |---|---:|---|

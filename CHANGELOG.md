@@ -70,3 +70,18 @@ Set up the repo and the data.
   commands in the README.
 - The two sources disagree on the data licence (CC BY-SA 4.0 on GitHub, CC BY 4.0 on
   Zenodo). It does not matter here because no data is committed.
+
+## 2026-11-15: check before sending
+
+Every README number was traced (the checker passes) and every claim read against its
+table. Changes to the README:
+
+- "The dip is gone by the next 30" is true of the main estimate. In all three
+  pre-registered checks it is still just visible at 30 recommendations (-0.07, -0.09
+  and -0.11 points, intervals excluding zero). The README now says so. Every interval
+  in the checks still sits inside the half-point rule, so the conclusion is unchanged.
+- "Before writing any code that computes an outcome" claimed more than git can show:
+  the history shows the order of commits, which were minutes apart. The sentence now
+  says the pre-registration was committed before any outcome code.
+- The empty "Why I cared" heading showed on GitHub. Only the placeholder is left until
+  I write it.
