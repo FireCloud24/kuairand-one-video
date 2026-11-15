@@ -3,7 +3,9 @@
 I used a real experiment inside the Kuaishou app to test whether a single chance
 encounter with a topic changes what the recommender shows you next.
 
-<!-- MYO: write 2–4 sentences on why you cared -->
+## Why I cared
+
+People often say that one odd video can take over your feed. It is hard to test, because you usually can't tell whether you chose that video or the app pushed it at you. Kuaishou showed some videos at random, which turns the question into an experiment. I wanted to use it to see whether the story holds.
 
 ## What I found
 
